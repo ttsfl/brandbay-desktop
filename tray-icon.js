@@ -59,7 +59,13 @@ function createTray(mainWindow) {
     {
       label: 'Check for Updates',
       click: () => {
+        // Import required modules
         const { autoUpdater } = require('electron-updater');
+        
+        // Set the manual update check flag in main.js
+        global.isManualUpdateCheck = true;
+        
+        // Check for updates
         autoUpdater.checkForUpdatesAndNotify();
       }
     },

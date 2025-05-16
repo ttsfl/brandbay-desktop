@@ -132,7 +132,8 @@ app.whenReady().then(() => {
     // Create tray icon
     tray = createTray(mainWindow);
     
-    // Check for updates
+    // Check for updates silently (isManualUpdateCheck is already false by default)
+    log.info('Performing automatic update check at startup');
     autoUpdater.checkForUpdatesAndNotify();
   }, 1500);
   
@@ -148,12 +149,27 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
+// Track whether update check was triggered manually by user
+// Make it accessible via global so other modules can set it
+global.isManualUpdateCheck = false;
+let isManualUpdateCheck = false;
+
+// Set up a watch on the global variable
+Object.defineProperty(global, 'isManualUpdateCheck', {
+  get: () => isManualUpdateCheck,
+  set: (value) => {
+    isManualUpdateCheck = value;
+    log.info(`Manual update check flag set to: ${value}`);
+  }
+});
+
 // Auto updater events
 autoUpdater.on('checking-for-update', () => {
   log.info('Checking for update...');
   // Log the current version and update URL
   log.info(`Current version: ${app.getVersion()}`);
   log.info(`Update feed URL: ${autoUpdater.getFeedURL() || 'Using default GitHub URL'}`);
+  log.info(`Manual check: ${isManualUpdateCheck}`);
 });
 
 autoUpdater.on('update-available', (info) => {
@@ -184,8 +200,8 @@ autoUpdater.on('update-available', (info) => {
 autoUpdater.on('update-not-available', (info) => {
   log.info('Update not available:', info);
   
-  // Show a dialog to inform the user
-  if (mainWindow) {
+  // Only show dialog if this was a manual check
+  if (mainWindow && isManualUpdateCheck) {
     const { dialog } = require('electron');
     dialog.showMessageBox(mainWindow, {
       type: 'info',
@@ -195,14 +211,18 @@ autoUpdater.on('update-not-available', (info) => {
       buttons: ['OK']
     });
   }
+  
+  // Reset the flag
+  isManualUpdateCheck = false;
 });
 
 autoUpdater.on('error', (err) => {
   log.error('Error in auto-updater:', err);
   log.error('Error details:', err.stack || err.toString());
   
-  // Notify user about update error
-  if (mainWindow) {
+  // Only show notification for manual checks or critical errors
+  if (mainWindow && isManualUpdateCheck) {
+    // Show notification
     mainWindow.webContents.executeJavaScript(`
       const notification = new Notification('Update Error', {
         body: 'There was an error while checking for updates. Please try again later.'
@@ -219,6 +239,9 @@ autoUpdater.on('error', (err) => {
       buttons: ['OK']
     });
   }
+  
+  // Reset the flag
+  isManualUpdateCheck = false;
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
