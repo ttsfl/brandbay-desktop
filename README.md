@@ -2,6 +2,35 @@
 
 A desktop application wrapper for [BrandBay](https://app.brandbay.io/) built with Electron.
 
+## Installation Instructions
+
+### macOS
+
+1. Download the latest version from [GitHub Releases](https://github.com/ttsfl/brandbay-desktop/releases)
+2. Mount the DMG file by double-clicking it
+3. Drag the BrandBay app to your Applications folder
+4. **Important**: When first opening the app, you may see a security warning saying "BrandBay is damaged and can't be opened"
+
+   **Method 1: Using Finder**
+   - Instead of double-clicking, right-click (or Control+click) on the app in your Applications folder
+   - Select "Open" from the context menu
+   - Click "Open" in the security dialog that appears
+   - This only needs to be done the first time you open the app
+
+   **Method 2: Using Terminal**
+   - Open Terminal (Applications > Utilities > Terminal)
+   - Run the following command:
+     ```
+     xattr -cr /Applications/BrandBay.app
+     ```
+   - Try opening the app normally after running this command
+
+### Windows
+
+1. Download the latest version from [GitHub Releases](https://github.com/ttsfl/brandbay-desktop/releases)
+2. Run the installer (BrandBay-Setup-x.x.x.exe)
+3. Follow the on-screen instructions to complete installation
+
 ## Features
 
 - Cross-platform desktop application (macOS, Windows)
