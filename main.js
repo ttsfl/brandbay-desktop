@@ -6,8 +6,16 @@ const { createTray } = require('./tray-icon');
 const { createContextMenu } = require('./context-menu');
 
 // Configure logging
-log.transports.file.level = 'info';
+log.transports.file.level = 'debug'; // Set to debug for more detailed logs
 log.info('App starting...');
+
+// Log important app paths
+log.info('App paths:');
+log.info(`  App path: ${app.getAppPath()}`);
+log.info(`  User data path: ${app.getPath('userData')}`);
+log.info(`  Executable path: ${app.getPath('exe')}`);
+log.info(`  Is packaged: ${app.isPackaged}`);
+
 
 /**
  * Loads the BrandBay web app with offline support
@@ -143,26 +151,56 @@ app.on('window-all-closed', () => {
 // Auto updater events
 autoUpdater.on('checking-for-update', () => {
   log.info('Checking for update...');
+  // Log the current version and update URL
+  log.info(`Current version: ${app.getVersion()}`);
+  log.info(`Update feed URL: ${autoUpdater.getFeedURL() || 'Using default GitHub URL'}`);
 });
 
 autoUpdater.on('update-available', (info) => {
-  log.info('Update available.', info);
+  log.info('Update available:', info);
+  log.info(`Update version: ${info.version}`);
+  log.info(`Release date: ${info.releaseDate}`);
+  
   // Notify user about available update
   if (mainWindow) {
     mainWindow.webContents.executeJavaScript(`
       const notification = new Notification('Update Available', {
-        body: 'A new version of BrandBay is available and will be downloaded in the background.'
+        body: 'A new version of BrandBay (${info.version}) is available and will be downloaded in the background.'
       });
     `).catch(err => log.error('Error showing update notification', err));
+    
+    // Also show a dialog for better visibility
+    const { dialog } = require('electron');
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Update Available',
+      message: `A new version of BrandBay (${info.version}) is available.`,
+      detail: 'The update will be downloaded in the background and installed when ready.',
+      buttons: ['OK']
+    });
   }
 });
 
 autoUpdater.on('update-not-available', (info) => {
-  log.info('Update not available.', info);
+  log.info('Update not available:', info);
+  
+  // Show a dialog to inform the user
+  if (mainWindow) {
+    const { dialog } = require('electron');
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'No Updates Available',
+      message: 'You are already running the latest version.',
+      detail: `Current version: ${app.getVersion()}`,
+      buttons: ['OK']
+    });
+  }
 });
 
 autoUpdater.on('error', (err) => {
-  log.error('Error in auto-updater. ', err);
+  log.error('Error in auto-updater:', err);
+  log.error('Error details:', err.stack || err.toString());
+  
   // Notify user about update error
   if (mainWindow) {
     mainWindow.webContents.executeJavaScript(`
@@ -170,6 +208,16 @@ autoUpdater.on('error', (err) => {
         body: 'There was an error while checking for updates. Please try again later.'
       });
     `).catch(err => log.error('Error showing error notification', err));
+    
+    // Also show a dialog for better visibility
+    const { dialog } = require('electron');
+    dialog.showMessageBox(mainWindow, {
+      type: 'error',
+      title: 'Update Error',
+      message: 'Failed to check for updates.',
+      detail: `Error: ${err.message || err}\n\nPlease check your internet connection and try again later.`,
+      buttons: ['OK']
+    });
   }
 });
 
@@ -178,10 +226,22 @@ autoUpdater.on('download-progress', (progressObj) => {
   log_message = `${log_message} - Downloaded ${progressObj.percent}%`;
   log_message = `${log_message} (${progressObj.transferred}/${progressObj.total})`;
   log.info(log_message);
+  
+  // Update the main window with progress (optional)
+  if (mainWindow && progressObj.percent % 10 === 0) { // Update every 10%
+    mainWindow.setProgressBar(progressObj.percent / 100);
+  }
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-  log.info('Update downloaded', info);
+  log.info('Update downloaded:', info);
+  log.info(`Update version: ${info.version}`);
+  log.info(`Release date: ${info.releaseDate}`);
+  
+  // Reset progress bar
+  if (mainWindow) {
+    mainWindow.setProgressBar(-1);
+  }
   
   // Notify user that update is ready
   if (mainWindow) {
@@ -190,8 +250,21 @@ autoUpdater.on('update-downloaded', (info) => {
         body: 'A new version of BrandBay has been downloaded. It will be installed when you restart the application.'
       });
     `).catch(err => log.error('Error showing update-ready notification', err));
+    
+    // Show a dialog asking if the user wants to restart now
+    const { dialog } = require('electron');
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Update Ready',
+      message: `BrandBay ${info.version} has been downloaded.`,
+      detail: 'The update will be installed when you restart the application. Would you like to restart now?',
+      buttons: ['Restart Now', 'Later'],
+      defaultId: 0
+    }).then(result => {
+      if (result.response === 0) {
+        // User clicked 'Restart Now'
+        autoUpdater.quitAndInstall();
+      }
+    });
   }
-  
-  // Install the update on app quit
-  autoUpdater.quitAndInstall();
 });
