@@ -26,8 +26,9 @@
   "author": "BrandBay Team",
   "license": "MIT",
   "devDependencies": {
+    "electron": "^28.0.0",
     "electron-builder": "^24.13.3",
-    "electron": "^28.0.0"
+    "@electron/notarize": "^2.2.0"
   },
   "dependencies": {
     "electron-log": "^5.0.1",
@@ -36,6 +37,7 @@
   "build": {
     "appId": "com.brandbay.desktop",
     "productName": "BrandBay",
+    "afterSign": "./notarize.js",
     "mac": {
       "category": "public.app-category.business",
       "target": [
@@ -43,17 +45,21 @@
         "zip"
       ],
       "icon": "assets/BrandBayMacOSAppIcon1024.png",
-      "hardenedRuntime": false,
+      "hardenedRuntime": true,
       "gatekeeperAssess": false,
       "entitlements": "entitlements.mac.plist",
       "entitlementsInherit": "entitlements.mac.plist",
-      "identity": null
+      "identity": "${process.env.APPLE_IDENTITY}"
     },
     "win": {
-      "target": [{
-        "target": "nsis",
-        "arch": ["x64"]
-      }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "assets/BrandBayWindowsIcon256.ico",
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
