@@ -3,7 +3,9 @@
 # Load environment variables from .env.local if it exists
 if [ -f .env.local ]; then
   echo "Loading credentials from .env.local"
-  export $(grep -v '^#' .env.local | xargs)
+  set -a
+  source .env.local
+  set +a
 else
   echo "No .env.local file found. Please create one based on .env.template"
   echo "Or provide credentials as environment variables"
