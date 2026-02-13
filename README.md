@@ -2,124 +2,107 @@
 
 A desktop application wrapper for [BrandBay](https://app.brandbay.io/) built with Electron.
 
-## Installation Instructions
+## Features
+
+- **Browser wrapper** for app.brandbay.io — dedicated desktop window, no extra browser tabs
+- **Auto-updates** via GitHub Releases using `electron-updater`
+- **Code signed & notarized** for macOS (Developer ID: Overturn LLC)
+- **Tray icon** with quick access menu and manual update check
+- **Offline support** with automatic retry
+- **Context menu** with copy/paste, navigation, and reload
+
+## Installation
 
 ### macOS
 
-1. Download the latest version from [GitHub Releases](https://github.com/ttsfl/brandbay-desktop/releases)
-2. Mount the DMG file by double-clicking it
-3. Drag the BrandBay app to your Applications folder
-4. **Important**: When first opening the app, you may see a security warning saying "BrandBay is damaged and can't be opened"
-
-   **Method 1: Using Finder**
-   - Instead of double-clicking, right-click (or Control+click) on the app in your Applications folder
-   - Select "Open" from the context menu
-   - Click "Open" in the security dialog that appears
-   - This only needs to be done the first time you open the app
-
-   **Method 2: Using Terminal**
-   - Open Terminal (Applications > Utilities > Terminal)
-   - Run the following command:
-     ```
-     xattr -cr /Applications/BrandBay.app
-     ```
-   - Try opening the app normally after running this command
+1. Download the latest `.dmg` from [GitHub Releases](https://github.com/TTSFL/brandbay-desktop/releases)
+2. Open the DMG and drag BrandBay to Applications
+3. Launch normally — the app is signed and notarized, no security warnings
 
 ### Windows
 
-1. Download the latest version from [GitHub Releases](https://github.com/ttsfl/brandbay-desktop/releases)
-2. Run the installer (BrandBay-Setup-x.x.x.exe)
-3. Follow the on-screen instructions to complete installation
-
-## Features
-
-- Cross-platform desktop application (macOS, Windows)
-- Auto-updates when new versions are available
-- Native desktop experience for the BrandBay web application
+1. Download `BrandBay-Setup-x.x.x.exe` from [GitHub Releases](https://github.com/TTSFL/brandbay-desktop/releases)
+2. Run the installer and follow the prompts
 
 ## Development
 
 ### Prerequisites
 
-- Node.js (v14 or higher)
-- npm (v6 or higher)
+- **Node.js** v18+
+- **npm** v9+
+- For macOS signing: Apple Developer ID certificate (`.p12` file)
 
 ### Setup
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/brandbay-desktop.git
-   cd brandbay-desktop
-   ```
+```bash
+git clone https://github.com/TTSFL/brandbay-desktop.git
+cd brandbay-desktop
+npm install
+```
 
-2. Install dependencies:
-   ```
-   npm install
-   ```
+### Run in development mode
 
-3. Start the application in development mode:
-   ```
-   npm start
-   ```
+```bash
+npm start
+```
+
+### Environment Configuration
+
+Copy `.env.template` to `.env.local` and fill in your credentials:
+
+```bash
+cp .env.template .env.local
+```
+
+Required variables for macOS signed builds:
+- `APPLE_ID` — Your Apple ID email
+- `APPLE_APP_SPECIFIC_PASSWORD` — App-specific password from appleid.apple.com
+- `APPLE_TEAM_ID` — Your Apple Developer Team ID
+- `CSC_LINK` — Absolute path to your `.p12` certificate file
+- `CSC_KEY_PASSWORD` — Password for the `.p12` file
+- `GH_TOKEN` — GitHub personal access token (for publishing releases)
 
 ## Building
 
-### For all platforms:
-```
-npm run dist
-```
+### macOS (signed + notarized)
 
-### For specific platforms:
-```
-# macOS
-npm run dist -- --mac
-
-# Windows
-npm run dist -- --win
-
-# Linux
-npm run dist -- --linux
+```bash
+npm run build:mac
 ```
 
-## Auto-Update Configuration
+This uses `build-signed.sh` which:
+1. Creates a clean temporary keychain
+2. Imports your `.p12` certificate
+3. Builds with `electron-builder`
+4. Notarizes via Apple's notary service (via `afterSign` hook)
+5. Cleans up the temporary keychain
 
-This application uses `electron-updater` to provide automatic updates. The update configuration is set in `package.json` under the `build.publish` section and is configured to use GitHub releases.
+### macOS (signed + notarized + publish to GitHub)
 
-### Publishing New Versions
-
-1. Update the version number in `package.json`
-2. Run the following command with your GitHub token:
-   ```
-   GH_TOKEN=your_token npm run dist -- -p always
-   ```
-3. This will build the app and publish the new version to GitHub releases
-
-## Distribution
-
-### macOS
-
-Provide users with one of these files:
-- `BrandBay-[version]-arm64.dmg`: Standard macOS installer (recommended)
-- `BrandBay-[version]-arm64-mac.zip`: Alternative ZIP package
-
-Since the app is unsigned, users will need to:
-1. Right-click (or Control-click) on the app
-2. Select "Open" from the context menu
-3. Click "Open" in the security warning dialog
+```bash
+npm run build:mac:publish
+```
 
 ### Windows
 
-Provide users with:
-- `BrandBay-Setup-[version].exe`: Windows installer
+```bash
+npm run build:win
+```
 
-Users might see a SmartScreen warning and will need to click "More info" and then "Run anyway".
+### Publishing a New Version
 
-To configure auto-updates for your own deployment:
+1. Bump the version in `package.json`
+2. Run `npm run build:mac:publish`
+3. The signed, notarized build is automatically uploaded to GitHub Releases
+4. Existing users receive the update automatically on next launch
 
-1. Create a GitHub repository for the application
-2. Update the `repository.url`, `build.publish.owner`, and `build.publish.repo` fields in `package.json`
-3. Generate a GitHub access token with appropriate permissions
-4. Set the `GH_TOKEN` environment variable when building the application
+## Tech Stack
+
+- **Electron** 38.x (supported LTS)
+- **electron-builder** 26.x (packaging + signing)
+- **electron-updater** 6.x (auto-updates via GitHub Releases)
+- **@electron/notarize** 3.x (Apple notarization)
+- **electron-log** 5.x (structured logging)
 
 ## License
 

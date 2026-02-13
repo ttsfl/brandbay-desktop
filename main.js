@@ -88,7 +88,6 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      enableRemoteModule: false,
       preload: path.join(__dirname, 'preload.js')
     },
     icon: iconPath
@@ -168,7 +167,8 @@ autoUpdater.on('checking-for-update', () => {
   log.info('Checking for update...');
   // Log the current version and update URL
   log.info(`Current version: ${app.getVersion()}`);
-  log.info(`Update feed URL: ${autoUpdater.getFeedURL() || 'Using default GitHub URL'}`);
+  const feedURL = autoUpdater.getFeedURL();
+  log.info(`Update feed URL: ${typeof feedURL === 'string' ? feedURL : JSON.stringify(feedURL) || 'Using default GitHub URL'}`);
   log.info(`Manual check: ${isManualUpdateCheck}`);
 });
 
@@ -250,8 +250,8 @@ autoUpdater.on('download-progress', (progressObj) => {
   log_message = `${log_message} (${progressObj.transferred}/${progressObj.total})`;
   log.info(log_message);
   
-  // Update the main window with progress (optional)
-  if (mainWindow && progressObj.percent % 10 === 0) { // Update every 10%
+  // Update the main window with progress
+  if (mainWindow) {
     mainWindow.setProgressBar(progressObj.percent / 100);
   }
 });
