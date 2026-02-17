@@ -10,7 +10,8 @@
     "build": "node build.js",
     "build:mac": "./build-signed.sh",
     "build:mac:publish": "./build-signed.sh --publish",
-    "build:win": "node build.js win",
+    "build:win": "./build-win-signed.sh",
+    "build:win:publish": "./build-win-signed.sh --publish",
     "build:linux": "node build.js linux",
     "build:all": "node build.js all",
     "postinstall": "electron-builder install-app-deps"
