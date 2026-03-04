@@ -5,6 +5,9 @@ const log = require('electron-log');
 const { createTray } = require('./tray-icon');
 const { createContextMenu } = require('./context-menu');
 
+// Set the display name for macOS menus (About, Hide, Quit)
+app.name = 'BrandBay';
+
 // Configure logging
 log.transports.file.level = 'debug'; // Set to debug for more detailed logs
 log.info('App starting...');
@@ -371,7 +374,22 @@ autoUpdater.on('update-downloaded', (info) => {
     }).then(result => {
       if (result.response === 0) {
         // User clicked 'Restart Now'
-        autoUpdater.quitAndInstall();
+        log.info('User chose to restart for update installation');
+
+        // Ensure the update installs on quit
+        autoUpdater.autoInstallOnAppQuit = true;
+
+        // Remove event listeners that may prevent the app from quitting
+        app.removeAllListeners('window-all-closed');
+
+        // Force close all windows — on macOS, window-all-closed
+        // does not quit the app, which prevents quitAndInstall from working
+        BrowserWindow.getAllWindows().forEach(win => win.destroy());
+
+        // Small delay to let windows fully close before quit+install
+        setTimeout(() => {
+          autoUpdater.quitAndInstall(false, true);
+        }, 300);
       }
     });
   }
