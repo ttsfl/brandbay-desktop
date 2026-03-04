@@ -68,26 +68,14 @@ fi
 echo "--- Building BrandBay Desktop for Windows ---"
 echo ""
 
-# Generate a temporary electron-builder config with Azure signing options
-# This keeps Azure account details out of the repo's package.json
-AZURE_CONFIG=$(mktemp)
-cat > "$AZURE_CONFIG" << EOF
-win:
-  publisherName: "$WIN_PUBLISHER_NAME"
-  azureSignOptions:
-    endpoint: "$AZURE_ENDPOINT"
-    codeSigningAccountName: "$AZURE_CODE_SIGNING_ACCOUNT"
-    certificateProfileName: "$AZURE_CERT_PROFILE"
-EOF
+# Use the JS build script which merges Azure signing options
+# with the existing package.json config via electron-builder's API
+PUBLISH_ARG=""
+if [ -n "$PUBLISH_FLAG" ]; then
+  PUBLISH_ARG="--publish"
+fi
 
-cleanup() {
-  rm -f "$AZURE_CONFIG"
-  echo "Cleanup complete."
-}
-trap cleanup EXIT
-
-# Run electron-builder for Windows with Azure signing config overlay
-npx electron-builder --win --config "$AZURE_CONFIG" $PUBLISH_FLAG
+node build-win.js $PUBLISH_ARG
 
 echo ""
 echo "============================================="

@@ -1,0 +1,71 @@
+# =============================================================================
+# BrandBay Desktop - Windows Signed Build (GitHub Actions)
+# =============================================================================
+# Builds, signs (via Azure Trusted Signing), and publishes the Windows installer.
+#
+# Trigger: Manual dispatch from GitHub Actions tab, or via GitHub CLI:
+#   gh workflow run build-windows.yml -f publish=true
+#
+# Required GitHub Secrets:
+#   AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET
+#   AZURE_ENDPOINT, AZURE_CODE_SIGNING_ACCOUNT, AZURE_CERT_PROFILE
+#   WIN_PUBLISHER_NAME
+#   GH_TOKEN (GitHub PAT with repo/releases access)
+# =============================================================================
+
+name: Build Windows (Signed)
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: 'Publish to GitHub Releases'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and sign Windows installer
+        env:
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          AZURE_ENDPOINT: ${{ secrets.AZURE_ENDPOINT }}
+          AZURE_CODE_SIGNING_ACCOUNT: ${{ secrets.AZURE_CODE_SIGNING_ACCOUNT }}
+          AZURE_CERT_PROFILE: ${{ secrets.AZURE_CERT_PROFILE }}
+          WIN_PUBLISHER_NAME: ${{ secrets.WIN_PUBLISHER_NAME }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          $publish = if ("${{ github.event.inputs.publish }}" -eq "true") { "always" } else { "never" }
+          node build-win.js $(if ($publish -eq "always") { "--publish" })
+        shell: pwsh
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-installer
+          path: |
+            dist/*.exe
+            dist/*.exe.blockmap
+            dist/latest.yml
+          retention-days: 30
