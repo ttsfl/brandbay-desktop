@@ -20,8 +20,8 @@ function createContextMenu(window) {
     }
 
     // Add navigation options
-    menu.append(new MenuItem({ label: 'Back', click: () => window.webContents.goBack(), enabled: window.webContents.canGoBack() }));
-    menu.append(new MenuItem({ label: 'Forward', click: () => window.webContents.goForward(), enabled: window.webContents.canGoForward() }));
+    menu.append(new MenuItem({ label: 'Back', click: () => window.webContents.navigationHistory.goBack(), enabled: window.webContents.navigationHistory.canGoBack() }));
+    menu.append(new MenuItem({ label: 'Forward', click: () => window.webContents.navigationHistory.goForward(), enabled: window.webContents.navigationHistory.canGoForward() }));
     menu.append(new MenuItem({ label: 'Reload', click: () => window.webContents.reload() }));
     
     // Show the context menu

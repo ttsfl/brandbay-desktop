@@ -113,6 +113,17 @@ echo "--- Building BrandBay Desktop ---"
 # Tell electron-builder to use our temporary keychain
 export CSC_KEYCHAIN="$KEYCHAIN_PATH"
 
+# Unset CSC_LINK/CSC_KEY_PASSWORD before invoking electron-builder: we've already
+# imported the certificate into our own temp keychain above with the correct
+# unlock password. If these stay set, electron-builder tries to create *another*
+# temp keychain itself and unlock it using the .p12 import password instead of
+# the keychain's own password, which fails on current macOS versions
+# (see https://github.com/electron-userland/electron-builder/issues/10066).
+# Unsetting them makes electron-builder fall back to CSC_KEYCHAIN / identity
+# auto-discovery, which uses the keychain we already set up correctly.
+unset CSC_LINK
+unset CSC_KEY_PASSWORD
+
 # Determine publish flag
 PUBLISH_FLAG=""
 if [ "${1:-}" = "--publish" ]; then
